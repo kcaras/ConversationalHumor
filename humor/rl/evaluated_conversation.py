@@ -7,6 +7,8 @@ from scipy import spatial
 from rl.chatbots import ChatbotWrapper, NormalChatbot
 from rl.conversation import Conversation
 from utils.file_access import add_module, CHATBOT_MODULE
+from collections import Counter
+import language_check
 
 add_module(CHATBOT_MODULE)
 
@@ -32,6 +34,7 @@ class EvaluatedConversation(Conversation):
         self.stopwords = stopwords.words('english')
         self.ended = False
         self.sentiment_analyzer = SentimentIntensityAnalyzer()
+        self.grammar_tool = language_check.LanguageTool('en-US')
 
     def start_conversation(self, starter: str = '') -> str:
         """
@@ -92,7 +95,14 @@ class EvaluatedConversation(Conversation):
         last_response_keywords = [word for word in last_response.split(' ') if word not in self.stopwords]
         response_keywords = [word for word in response.split(' ') if word not in self.stopwords]
         num_current_keywords = len(response_keywords)
-
+        if len(self.grammar_tool.check(response))==0:
+            grammar_errors = 1.0
+        else:
+            grammar_errors = 1.0/len(self.grammar_tool.check(response))
+        c = Counter([word for word in response.split(' ')])
+        repeat = 0
+        if any([c[i] > 3 for i in c]):
+            repeat = 0.2
         embeddings = self.chatbot.chatbot.embeddings
 
         if last_response:
@@ -132,7 +142,8 @@ class EvaluatedConversation(Conversation):
 
         sentiment_change_score = sentiment_difference
 
-        final_score = (dissimilarity_score + current_sentiment_score + response_sentiment_score + sentiment_change_score) / 4
+        #final_score = (dissimilarity_score + current_sentiment_score + response_sentiment_score + sentiment_change_score) / 4
+        final_score = repeat*grammar_errors*(dissimilarity_score + current_sentiment_score + response_sentiment_score + sentiment_change_score) / 4
         if self.chatbot.chatbot.outer_args.debug_print:
             print('Score: %f, Dissimilarity: %f, Current sentiment: %f, Response sentiment: %f, Sentiment change: %f' % (final_score, dissimilarity_score, current_sentiment_score, response_sentiment_score, sentiment_change_score))
         return final_score
