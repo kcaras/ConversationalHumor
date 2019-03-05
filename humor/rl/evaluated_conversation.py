@@ -142,8 +142,8 @@ class EvaluatedConversation(Conversation):
 
         sentiment_change_score = sentiment_difference
 
-        #final_score = (dissimilarity_score + current_sentiment_score + response_sentiment_score + sentiment_change_score) / 4
-        final_score = repeat*grammar_errors*(dissimilarity_score + current_sentiment_score + response_sentiment_score + sentiment_change_score) / 4
+        final_score = (dissimilarity_score + current_sentiment_score + response_sentiment_score + sentiment_change_score) / 4
+        #final_score = repeat*grammar_errors*(dissimilarity_score + current_sentiment_score + response_sentiment_score + sentiment_change_score) / 4
         if self.chatbot.chatbot.outer_args.debug_print:
             print('Score: %f, Dissimilarity: %f, Current sentiment: %f, Response sentiment: %f, Sentiment change: %f' % (final_score, dissimilarity_score, current_sentiment_score, response_sentiment_score, sentiment_change_score))
         return final_score
