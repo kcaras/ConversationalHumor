@@ -127,6 +127,6 @@ class HumorProbChatbot(ChatbotWrapper):
 
         self.chatbot.humorProb = True
         response = self.chatbot.respond(user_input, print_response, self.show_other)
-        self.chatbot.humorProb = False
+        #self.chatbot.humorProb = False
 
         return response
