@@ -36,11 +36,12 @@ class EvaluatedConversation(Conversation):
         self.sentiment_analyzer = SentimentIntensityAnalyzer()
         self.reference = []
         self.use_reddit = use_reddit
+        self.get_reference()
 
     def get_reference(self):
         with open('humor/data/reddit_jokes.txt', '') as reddit_file:
             clean = reddit_file.read().replace('===', '').replace('\n', ' ')
-            sents = sent_tokenize(clean)
+            sents = [word_tokenize(sent) for sent in sent_tokenize(clean)]
         self.reference = sents
 
     def start_conversation(self, starter: str = '') -> str:

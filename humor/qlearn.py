@@ -34,7 +34,8 @@ def run() -> None:
         env = EvaluatedConversation(chatbot_object)
         normal_chatbot = chatbots.NormalChatbot(chatbot_object, 'Normal')
         prob_chatbot = chatbots.HumorProbChatbot(chatbot_object, 'HumorProb')
-        env.use_reddit = normal_chatbot.chatbot.args.datasetTag == 'reddit_jokes'
+        #env.use_reddit = normal_chatbot.chatbot.args.datasetTag == 'reddit_jokes'
+        env.use_reddit = True
         responders = [normal_chatbot, prob_chatbot]
 
         for responder in responders:
