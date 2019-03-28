@@ -39,7 +39,7 @@ class EvaluatedConversation(Conversation):
         self.get_reference()
 
     def get_reference(self):
-        with open('humor/data/reddit_jokes.txt', '') as reddit_file:
+        with open('humor/data/reddit_jokes.txt', 'r') as reddit_file:
             clean = reddit_file.read().replace('===', '').replace('\n', ' ')
             sents = [word_tokenize(sent) for sent in sent_tokenize(clean)]
         self.reference = sents
