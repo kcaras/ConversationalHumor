@@ -1,13 +1,15 @@
 import string
 
 from nltk.corpus import stopwords
+from nltk import word_tokenize
+from nltk import sent_tokenize
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from scipy import spatial
 
 from rl.chatbots import ChatbotWrapper, NormalChatbot
 from rl.conversation import Conversation
 from utils.file_access import add_module, CHATBOT_MODULE
-
+from nltk.translate.bleu_score import sentence_bleu
 add_module(CHATBOT_MODULE)
 
 import DeepQA.chatbot.chatbot as chatbot
@@ -17,7 +19,7 @@ class EvaluatedConversation(Conversation):
     A conversation that is evaluated with a non-trivial function.
     """
 
-    def __init__(self, chatbot_object: chatbot.Chatbot):
+    def __init__(self, chatbot_object: chatbot.Chatbot, use_reddit=False):
         """
         Sets up the chatbot to be used in the conversation.
 
@@ -32,6 +34,14 @@ class EvaluatedConversation(Conversation):
         self.stopwords = stopwords.words('english')
         self.ended = False
         self.sentiment_analyzer = SentimentIntensityAnalyzer()
+        self.reference = []
+        self.use_reddit = use_reddit
+
+    def get_reference(self):
+        with open('humor/data/reddit_jokes.txt', '') as reddit_file:
+            clean = reddit_file.read().replace('===', '').replace('\n', ' ')
+            sents = sent_tokenize(clean)
+        self.reference = sents
 
     def start_conversation(self, starter: str = '') -> str:
         """
@@ -132,7 +142,12 @@ class EvaluatedConversation(Conversation):
 
         sentiment_change_score = sentiment_difference
 
-        final_score = (dissimilarity_score + current_sentiment_score + response_sentiment_score + sentiment_change_score) / 4
+        bleu_score = 0
+        if self.use_reddit:
+            candidate = word_tokenize(current_message)
+            bleu_score = sentence_bleu(self.reference, candidate)
+
+        final_score = 10*bleu_score + (dissimilarity_score + current_sentiment_score + response_sentiment_score + sentiment_change_score) / 4
         if self.chatbot.chatbot.outer_args.debug_print:
             print('Score: %f, Dissimilarity: %f, Current sentiment: %f, Response sentiment: %f, Sentiment change: %f' % (final_score, dissimilarity_score, current_sentiment_score, response_sentiment_score, sentiment_change_score))
         return final_score
