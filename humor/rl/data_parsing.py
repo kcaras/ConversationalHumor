@@ -5,6 +5,7 @@ from torchtext.data import TabularDataset
 import torch.autograd as ag
 from torch.autograd import Variable
 import torch.cuda as cuda
+from torchtext import datasets
 import json
 import unicodedata
 import re
@@ -125,8 +126,9 @@ def variable_from_sentence(lang, sentence):
 
 
 def make_torch_dataset_from_reddit_jokes():
-    TEXT = Field(sequential=True, tokenize=tokenize, lower=True)
+    TEXT = Field(sequential=True, tokenize='spacy', lower=True)
     LABEL = Field(sequential=False, use_vocab=False, dtype=torch.float)
+    train_data, test_data = datasets.IMDB.splits(TEXT, LABEL)
     joke_datafields = [('sentence', TEXT), ('score', LABEL)]
     trn, vld, tst = TabularDataset.splits(path='', train='reddit_cleaned_train.csv',
                                           validation='reddit_cleaned_valid.csv',
