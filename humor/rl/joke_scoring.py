@@ -4,7 +4,6 @@ import pickle
 from torch import optim
 from torch import nn
 from torchtext import data
-import spacy
 import numpy as np
 import torch
 import time
@@ -110,15 +109,21 @@ def run():
     json_out = data_parsing.parse_reddit_jokes()
     out_lang, pairs = data_parsing.read_langs('reddit_jokes', json_out)
     INPUT_DIM = out_lang.n_words
-    EMBEDDING_DIM = 64
-    N_FILTERS = 100
-    FILTER_SIZES = [3, 4, 5]
+    MAX_VOCAB_SIZE = 25_000
+    train_data, valid_data, test_data, TEXT, LABEL = data_parsing.make_torch_dataset_from_reddit_jokes()
+    TEXT.build_vocab(train_data,
+                     max_size=MAX_VOCAB_SIZE,
+                     vectors="glove.6B.100d",
+                     unk_init=torch.Tensor.normal_)
+    EMBEDDING_DIM = 100
+    N_FILTERS = 1
+    FILTER_SIZES = [1, 1, 1, 1]
     OUTPUT_DIM = 1
     DROPOUT = 0.5
-    model = CNN(INPUT_DIM, EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, OUTPUT_DIM, DROPOUT)
-    pret_embs = pickle.load(open('pretrained-embeds-coref.pkl', 'rb'))
-    initialize_with_pretrained(pret_embs, model, out_lang)
-
+    PAD_IDX = TEXT.vocab.stoi[TEXT.pad_token]
+    model = CNN(INPUT_DIM, EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, OUTPUT_DIM, DROPOUT, PAD_IDX)
+    #pret_embs = pickle.load(open('pretrained-embeds-coref.pkl', 'rb'))
+    #initialize_with_pretrained(pret_embs, model, out_lang)
     N_EPOCHS = 5
     BATCH_SIZE = 64
     best_valid_loss = float('inf')
@@ -132,20 +137,16 @@ def run():
     # train_data = pairs[:train_ix]
     # valid_data = pairs[train_ix: train_ix + valid_ix]
     # test_data = pairs[train_ix + valid_ix:]
-    MAX_VOCAB_SIZE = 25_000
-    train_data, valid_data, test_data, TEXT, LABEL = data_parsing.make_torch_dataset_from_reddit_jokes()
-    TEXT.build_vocab(train_data,
-                     max_size=MAX_VOCAB_SIZE,
-                     vectors="glove.6B.100d",
-                     unk_init=torch.Tensor.normal_)
     #LABEL.build_vocab(train_data)
     train_iterator, valid_iterator, test_iterator = data.BucketIterator.splits(
         (train_data, valid_data, test_data),
         batch_size=BATCH_SIZE,
+        sort_key = lambda x: len(x.sentence),
+        sort_within_batch = False,
         device=device)
     print('starting the training thing')
     for epoch in range(N_EPOCHS):
-
+        print('epoch {}'.format(epoch))
         start_time = time.time()
 
         train_loss, train_acc = train(model, train_iterator, optimizer, criterion)
@@ -168,22 +169,7 @@ def run():
     test_loss, test_acc = evaluate(model, test_iterator, criterion)
 
     print(f'Test Loss: {test_loss:.3f} | Test Acc: {test_acc * 100:.2f}%')
-
-
-
-# nlp = spacy.load('en')
-#
-# def predict_humor(sentence, min_len = 5):
-#     tokenized = [tok.text for tok in nlp.tokenizer(sentence)]
-#     if len(tokenized) < min_len:
-#         tokenized += ['<pad>'] * (min_len - len(tokenized))
-#     indexed = [TEXT.vocab.stoi[t] for t in tokenized]
-#     tensor = torch.LongTensor(indexed).to(device)
-#     tensor = tensor.unsqueeze(1)
-#     prediction = torch.sigmoid(model(tensor))
-#     return prediction.item()
-
-
+    return model, TEXT, device
 
 
 if __name__ == '__main__':
