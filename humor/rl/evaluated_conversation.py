@@ -10,9 +10,14 @@ from rl.chatbots import ChatbotWrapper, NormalChatbot
 from rl.conversation import Conversation
 from utils.file_access import add_module, CHATBOT_MODULE
 from nltk.translate.bleu_score import sentence_bleu
+from joke_scoring import run
+import torch
+import spacy
 add_module(CHATBOT_MODULE)
 
 import DeepQA.chatbot.chatbot as chatbot
+nlp = spacy.load('en')
+
 
 class EvaluatedConversation(Conversation):
     """
@@ -37,6 +42,18 @@ class EvaluatedConversation(Conversation):
         self.reference = []
         self.use_reddit = use_reddit
         self.get_reference()
+        self.cnn_model, self.TEXT, self.device = run()
+        #model.load_state_dict(torch.load('tut4-model.pt'))
+
+    def predict_sentiment(self, sentence, min_len=2):
+        tokenized = [tok.text for tok in nlp.tokenizer(sentence)]
+        if len(tokenized) < min_len:
+            tokenized += ['<pad>'] * (min_len - len(tokenized))
+        indexed = [self.TEXT.vocab.stoi[t] for t in tokenized]
+        tensor = torch.LongTensor(indexed).to(self.device)
+        tensor = tensor.unsqueeze(1)
+        prediction = torch.sigmoid(self.cnn_model(tensor))
+        return prediction.item()
 
     def get_reference(self):
         with open('humor/data/reddit_jokes.txt', 'r') as reddit_file:
@@ -144,11 +161,12 @@ class EvaluatedConversation(Conversation):
         sentiment_change_score = sentiment_difference
 
         bleu_score = 0
-        if self.use_reddit:
-            candidate = word_tokenize(current_message)
-            bleu_score = sentence_bleu(self.reference, candidate)
+        # if self.use_reddit:
+        #     candidate = word_tokenize(current_message)
+        #     bleu_score = sentence_bleu(self.reference, candidate)
 
-        final_score = 10*bleu_score + (dissimilarity_score + current_sentiment_score + response_sentiment_score + sentiment_change_score) / 4
+        prediced_score = self.predict_sentiment(current_message)
+        final_score = 10*prediced_score + 10*bleu_score + (dissimilarity_score + current_sentiment_score + response_sentiment_score + sentiment_change_score) / 4
         if self.chatbot.chatbot.outer_args.debug_print:
             print('Score: %f, Dissimilarity: %f, Current sentiment: %f, Response sentiment: %f, Sentiment change: %f' % (final_score, dissimilarity_score, current_sentiment_score, response_sentiment_score, sentiment_change_score))
         return final_score
