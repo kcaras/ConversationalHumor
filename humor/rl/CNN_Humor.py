@@ -7,10 +7,10 @@ import torch.autograd as ag
 
 class CNN(nn.Module):
     def __init__(self, vocab_size, embedding_dim, n_filters, filter_sizes, output_dim,
-                 dropout):
+                 dropout, padding_ix):
         super().__init__()
 
-        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+        self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx = 3)
 
         self.convs = nn.ModuleList([
             nn.Conv2d(in_channels=1,
@@ -49,5 +49,4 @@ class CNN(nn.Module):
         cat = self.dropout(torch.cat(pooled, dim=1))
 
         # cat = [batch size, n_filters * len(filter_sizes)]
-
         return self.fc(cat)
