@@ -64,16 +64,19 @@ def read_langs(lang_name, json_out, write_clean_file=False, write_file_type='csv
     clean_map_valid = {}
     train_ix = int(len(json_out.keys())*0.7)
     valid_ix = int(len(json_out.keys())*0.2)
+    x_max = max([float(json_out[s]) for s in json_out.keys()])
+    x_min = min([float(json_out[s]) for s in json_out.keys()])
     for i, s in enumerate(json_out.keys()):
         clean_string = normalize_string(s)
         lines[i] = clean_string
+        x_out = (float(json_out[s])-x_min)/(x_max-x_min)
         if i < train_ix:
-            clean_map_train[clean_string] = float(json_out[s])
+            clean_map_train[clean_string] = x_out
         elif i > train_ix and i < train_ix + valid_ix:
-            clean_map_valid[clean_string] = float(json_out[s])
+            clean_map_valid[clean_string] = x_out
         else:
-            clean_map_test[clean_string] = float(json_out[s])
-        pairs.append((clean_string, json_out[s]))
+            clean_map_test[clean_string] = x_out
+        pairs.append((clean_string, x_out))
     if write_clean_file:
         maps = {'train': clean_map_train, 'valid': clean_map_valid, 'test': clean_map_test}
         for f_name in ['train', 'valid', 'test']:
@@ -96,7 +99,7 @@ def read_langs(lang_name, json_out, write_clean_file=False, write_file_type='csv
 
 
 def parse_reddit_jokes():
-    file_name = 'reddit_jokes.json'
+    file_name = 'rl/reddit_jokes.json'
     #lines = []
     #scores = []
     map = {}
@@ -126,13 +129,13 @@ def variable_from_sentence(lang, sentence):
 
 
 def make_torch_dataset_from_reddit_jokes():
-    TEXT = Field(sequential=True, tokenize='spacy', lower=True)
+    TEXT = Field(sequential=True, tokenize=tokenize, lower=True)
     LABEL = Field(sequential=False, use_vocab=False, dtype=torch.float)
     train_data, test_data = datasets.IMDB.splits(TEXT, LABEL)
     joke_datafields = [('sentence', TEXT), ('score', LABEL)]
-    trn, vld, tst = TabularDataset.splits(path='', train='reddit_cleaned_train.csv',
-                                          validation='reddit_cleaned_valid.csv',
-                                          test='reddit_cleaned_test.csv',
+    trn, vld, tst = TabularDataset.splits(path='', train='rl/reddit_cleaned_train.csv',
+                                          validation='rl/reddit_cleaned_valid.csv',
+                                          test='rl/reddit_cleaned_test.csv',
                                           format='csv',
                                           fields=joke_datafields)
     return trn, vld, tst, TEXT, LABEL

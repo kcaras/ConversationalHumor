@@ -10,13 +10,12 @@ from rl.chatbots import ChatbotWrapper, NormalChatbot
 from rl.conversation import Conversation
 from utils.file_access import add_module, CHATBOT_MODULE
 from nltk.translate.bleu_score import sentence_bleu
-from joke_scoring import run
+from .joke_scoring import run_cnn
 import torch
-import spacy
 add_module(CHATBOT_MODULE)
 
 import DeepQA.chatbot.chatbot as chatbot
-nlp = spacy.load('en')
+#nlp = spacy.load('en')
 
 
 class EvaluatedConversation(Conversation):
@@ -24,7 +23,7 @@ class EvaluatedConversation(Conversation):
     A conversation that is evaluated with a non-trivial function.
     """
 
-    def __init__(self, chatbot_object: chatbot.Chatbot, use_reddit=False):
+    def __init__(self, chatbot_object: chatbot.Chatbot, use_reddit=False, train_new=False):
         """
         Sets up the chatbot to be used in the conversation.
 
@@ -39,14 +38,18 @@ class EvaluatedConversation(Conversation):
         self.stopwords = stopwords.words('english')
         self.ended = False
         self.sentiment_analyzer = SentimentIntensityAnalyzer()
-        self.reference = []
+        #self.reference = []
         self.use_reddit = use_reddit
         self.get_reference()
-        self.cnn_model, self.TEXT, self.device = run()
+        if train_new:
+            self.cnn_model, self.TEXT, self.device = run_cnn()
+            torch.save(self.cnn_model.state_dict(), 'joke_cnn_model.pt')
+        #else:
+            #self.cnn_model, self.TEXT, self.device = torch.load('')
         #model.load_state_dict(torch.load('tut4-model.pt'))
 
     def predict_sentiment(self, sentence, min_len=2):
-        tokenized = [tok.text for tok in nlp.tokenizer(sentence)]
+        tokenized = word_tokenize(sentence) #[tok.text for tok in nlp.tokenizer(sentence)]
         if len(tokenized) < min_len:
             tokenized += ['<pad>'] * (min_len - len(tokenized))
         indexed = [self.TEXT.vocab.stoi[t] for t in tokenized]
@@ -56,10 +59,11 @@ class EvaluatedConversation(Conversation):
         return prediction.item()
 
     def get_reference(self):
-        with open('humor/data/reddit_jokes.txt', 'r') as reddit_file:
-            clean = reddit_file.read().replace('===', '').replace('\n', ' ')
-            sents = [word_tokenize(sent) for sent in sent_tokenize(clean)]
-        self.reference = sents
+       pass 
+       #with open('humor/data/reddit_jokes.txt', 'r') as reddit_file:
+       #     clean = reddit_file.read().replace('===', '').replace('\n', ' ')
+       #     sents = [word_tokenize(sent) for sent in sent_tokenize(clean)]
+       # self.reference = sents
 
     def start_conversation(self, starter: str = '') -> str:
         """

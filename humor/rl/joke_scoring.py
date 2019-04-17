@@ -1,5 +1,5 @@
-from CNN_Humor import CNN
-import data_parsing
+from .CNN_Humor import CNN
+import rl.data_parsing as data_parsing
 import pickle
 from torch import optim
 from torch import nn
@@ -105,7 +105,7 @@ def epoch_time(start_time, end_time):
     elapsed_secs = int(elapsed_time - (elapsed_mins * 60))
     return elapsed_mins, elapsed_secs
 
-def run():
+def run_cnn():
     json_out = data_parsing.parse_reddit_jokes()
     out_lang, pairs = data_parsing.read_langs('reddit_jokes', json_out)
     INPUT_DIM = out_lang.n_words
@@ -116,7 +116,7 @@ def run():
                      vectors="glove.6B.100d",
                      unk_init=torch.Tensor.normal_)
     EMBEDDING_DIM = 100
-    N_FILTERS = 1
+    N_FILTERS = 10
     FILTER_SIZES = [1, 1, 1, 1]
     OUTPUT_DIM = 1
     DROPOUT = 0.5
@@ -124,8 +124,8 @@ def run():
     model = CNN(INPUT_DIM, EMBEDDING_DIM, N_FILTERS, FILTER_SIZES, OUTPUT_DIM, DROPOUT, PAD_IDX)
     #pret_embs = pickle.load(open('pretrained-embeds-coref.pkl', 'rb'))
     #initialize_with_pretrained(pret_embs, model, out_lang)
-    N_EPOCHS = 5
-    BATCH_SIZE = 64
+    N_EPOCHS = 10
+    BATCH_SIZE = 128
     best_valid_loss = float('inf')
     optimizer = optim.Adam(model.parameters())
     criterion = nn.BCEWithLogitsLoss()
@@ -173,4 +173,4 @@ def run():
 
 
 if __name__ == '__main__':
-    run()
+    run_cnn()
