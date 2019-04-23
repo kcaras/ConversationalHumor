@@ -138,8 +138,8 @@ def run_cnn():
                      vectors="glove.6B.100d",
                      unk_init=torch.Tensor.normal_)
     EMBEDDING_DIM = 100
-    N_FILTERS = 10
-    FILTER_SIZES = [1, 1, 1, 1]
+    N_FILTERS = 20
+    FILTER_SIZES = [1, 2, 2, 1]
     OUTPUT_DIM = 1
     DROPOUT = 0.5
     PAD_IDX = TEXT.vocab.stoi[TEXT.pad_token]
@@ -185,8 +185,8 @@ def run_cnn():
         print(f'Epoch: {epoch + 1:02} | Epoch Time: {epoch_mins}m {epoch_secs}s')
         print(f'\tTrain Loss: {train_loss:.3f} | Train Acc: {train_acc * 100:.2f}%')
         print(f'\t Val. Loss: {valid_loss:.3f} |  Val. Acc: {valid_acc * 100:.2f}%')
-
-    model.load_state_dict(torch.load('tut4-model.pt'))
+    torch.save(model.state_dict(), 'cnn_filter2.pt')
+    #model.load_state_dict(torch.load('tut4-model.pt'))
 
     test_loss, test_acc = evaluate(model, test_iterator, criterion)
 
