@@ -10,7 +10,7 @@ from rl.chatbots import ChatbotWrapper, NormalChatbot
 from rl.conversation import Conversation
 from utils.file_access import add_module, CHATBOT_MODULE
 from nltk.translate.bleu_score import sentence_bleu
-from .joke_scoring import run_cnn
+from .joke_scoring import run_cnn, return_cnn_class
 import torch
 add_module(CHATBOT_MODULE)
 
@@ -44,9 +44,9 @@ class EvaluatedConversation(Conversation):
         if train_new:
             self.cnn_model, self.TEXT, self.device = run_cnn()
             torch.save(self.cnn_model.state_dict(), 'joke_cnn_model.pt')
-        #else:
-            #self.cnn_model, self.TEXT, self.device = torch.load('')
-        #model.load_state_dict(torch.load('tut4-model.pt'))
+        else:
+            self.cnn_model, self.TEXT, self.device = return_cnn_class()
+            self.cnn_model.load_state_dict(torch.load('joke_cnn_model.pt'))
 
     def predict_sentiment(self, sentence, min_len=2):
         tokenized = word_tokenize(sentence) #[tok.text for tok in nlp.tokenizer(sentence)]

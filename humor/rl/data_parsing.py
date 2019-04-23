@@ -58,7 +58,6 @@ def read_langs(lang_name, json_out, write_clean_file=False, write_file_type='csv
     print("Reading lines...")
     # Read the file and split into lines
     lines = ['']*len(json_out.keys())
-
     clean_map_train = {}
     clean_map_test = {}
     clean_map_valid = {}
@@ -130,7 +129,8 @@ def variable_from_sentence(lang, sentence):
 
 def make_torch_dataset_from_reddit_jokes():
     TEXT = Field(sequential=True, tokenize=tokenize, lower=True)
-    LABEL = Field(sequential=False, use_vocab=False, dtype=torch.float)
+    LABEL = Field(sequential=False, use_vocab=False, dtype=torch.double)
+    #LABEL = Field(sequential=False, use_vocab=False, dtype=torch.float)
     train_data, test_data = datasets.IMDB.splits(TEXT, LABEL)
     joke_datafields = [('sentence', TEXT), ('score', LABEL)]
     trn, vld, tst = TabularDataset.splits(path='', train='rl/reddit_cleaned_train.csv',
